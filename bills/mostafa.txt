@@ -1,0 +1,6 @@
+Bills breakdown 
+porota:                   ...$10 
+vaji:                     ...$20 
+tea:                      ...$15 
+Tip:                      ...$5.00 
+Total:                    ...$50.00 

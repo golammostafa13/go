@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>WebSocket Notifications</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 0;
+        background-color: #f4f4f9;
+      }
+
+      /* Navbar styles */
+      .navbar {
+        background-color: #333;
+        color: white;
+        display: flex;
+        justify-content: space-between;
+        padding: 10px 20px;
+      }
+
+      .navbar div {
+        font-size: 20px;
+      }
+
+      /* Notifications styles */
+      .notifications {
+        position: relative;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        position: relative;
+      }
+
+      .notifications::after {
+        content: "🔔";
+        margin-left: 10px;
+        font-size: 24px;
+      }
+
+      .notifications:hover .notification-content {
+        display: block;
+      }
+
+      /* Notification content on hover */
+      .notification-content {
+        display: none;
+        position: absolute;
+        top: 30px;
+        right: 0;
+        background-color: #fff;
+        border: 1px solid #ccc;
+        padding: 10px;
+        width: 250px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        border-radius: 5px;
+        z-index: 10;
+        max-height: 200px;
+        overflow-y: auto;
+      }
+
+      /* Modal styles */
+      .notification-modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.7);
+        color: white;
+        padding: 20px;
+        overflow-y: auto;
+        z-index: 999;
+      }
+
+      .notification-modal.active {
+        display: block;
+      }
+
+      .modal-content {
+        background: #333;
+        border-radius: 8px;
+        padding: 20px;
+      }
+
+      .close-modal {
+        cursor: pointer;
+        color: white;
+        background: red;
+        padding: 5px 10px;
+        border-radius: 5px;
+        float: right;
+      }
+
+      /* Container and form styles */
+      .container {
+        padding: 20px;
+        max-width: 600px;
+        margin: 20px auto;
+        background-color: white;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        border-radius: 8px;
+      }
+
+      h1 {
+        text-align: center;
+        margin-bottom: 20px;
+      }
+
+      form {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 20px;
+      }
+
+      input {
+        width: 70%;
+        padding: 10px;
+        font-size: 16px;
+        border-radius: 5px;
+        border: 1px solid #ccc;
+      }
+
+      button {
+        padding: 10px 20px;
+        font-size: 16px;
+        background-color: #4caf50;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+      }
+
+      button:hover {
+        background-color: #45a049;
+      }
+
+      #notificationList {
+        margin-top: 20px;
+        list-style-type: none;
+        padding: 0;
+      }
+
+      #notificationList div {
+        padding: 10px;
+        background-color: #f8f8f8;
+        margin-bottom: 10px;
+        border-radius: 5px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="navbar">
+      <div>Navbar</div>
+      <div class="notifications" id="notifications">
+        No notifications
+        <!-- Notification Dropdown Content -->
+        <div class="notification-content" id="notificationContent"></div>
+      </div>
+    </div>
+
+    <div class="container">
+      <h1>Submit a Notification</h1>
+      <form id="notificationForm">
+        <input
+          type="text"
+          id="notificationInput"
+          placeholder="Enter notification"
+        />
+        <button type="submit">Send</button>
+      </form>
+      <div id="notificationList"></div>
+    </div>
+
+    <script>
+      const notificationList = document.getElementById("notificationList");
+      const notifications = document.getElementById("notifications");
+      const notificationContent = document.getElementById(
+        "notificationContent"
+      );
+      const notificationHistory = [];
+
+      // Fetch historical notifications
+      async function fetchNotifications() {
+        const response = await fetch("/notifications");
+        if (response.ok) {
+          const data = await response.json();
+          notificationHistory.push(...data);
+          updateNotificationUI();
+        } else {
+          console.error("Failed to fetch notifications");
+        }
+      }
+
+      // Update notification UI
+      function updateNotificationUI() {
+        notificationList.innerHTML = "";
+        notificationContent.innerHTML = "";
+
+        if (notificationHistory.length > 0) {
+          notifications.textContent =
+            notificationHistory[notificationHistory.length - 1].content;
+
+          notificationHistory.forEach((notification) => {
+            const div = document.createElement("div");
+            div.textContent = `${notification.content} - ${new Date(
+              notification.timestamp
+            ).toLocaleString()}`;
+            notificationList.appendChild(div);
+
+            // For notification dropdown content
+            const dropdownDiv = document.createElement("div");
+            dropdownDiv.textContent = `${notification.content} - ${new Date(
+              notification.timestamp
+            ).toLocaleString()}`;
+            notificationContent.appendChild(dropdownDiv);
+          });
+        } else {
+          notifications.textContent = "No notifications";
+        }
+      }
+
+      // WebSocket connection
+      const socket = new WebSocket("ws://localhost:8081/ws");
+      socket.onmessage = (event) => {
+        const notification = JSON.parse(event.data);
+        notificationHistory.push(notification);
+        updateNotificationUI();
+      };
+
+      // Handle form submission
+      document
+        .getElementById("notificationForm")
+        .addEventListener("submit", (event) => {
+          event.preventDefault();
+          const name = document.getElementById("notificationInput").value;
+          if (!name) return;
+
+          fetch("/submit-name", {
+            method: "POST",
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            body: `name=${encodeURIComponent(name)}`,
+          })
+            .then((response) => response.json())
+            .then((data) => {
+              console.log(data.message);
+              document.getElementById("notificationInput").value = ""; // Clear the form
+            })
+            .catch((error) => console.error("Error:", error));
+        });
+
+      // Fetch notifications on page load
+      document.addEventListener("DOMContentLoaded", fetchNotifications);
+    </script>
+  </body>
+</html>

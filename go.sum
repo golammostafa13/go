@@ -1,2 +1,4 @@
 github.com/fatih/vim-go-tutorial v0.0.0-20181010233933-3f8bbd5f5e07 h1:u17X3LNnP6pPS29Yo+eth+hjph8GL2UMSvrUUK79uKk=
 github.com/fatih/vim-go-tutorial v0.0.0-20181010233933-3f8bbd5f5e07/go.mod h1:oa6JD/5IICE+xJoCq86PlDelkA17uQrqAuEsth1dbLQ=
+github.com/gorilla/websocket v1.5.3 h1:saDtZ6Pbx/0u+bgYQ3q96pZgCzfhKXGPqt7kZ72aNNg=
+github.com/gorilla/websocket v1.5.3/go.mod h1:YR8l580nyteQvAITg2hZ9XVh4b55+EU/adAjf1fMHhE=

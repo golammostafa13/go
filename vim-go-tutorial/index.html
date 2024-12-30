@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SSE Notifications</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 0;
+      }
+      .navbar {
+        background-color: #333;
+        color: white;
+        padding: 10px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .notifications {
+        margin-left: 20px;
+        font-size: 14px;
+      }
+      .container {
+        padding: 20px;
+      }
+      .notification {
+        background-color: #f1f1f1;
+        border: 1px solid #ccc;
+        padding: 10px;
+        margin: 5px 0;
+      }
+      .form-container {
+        margin: 20px 0;
+      }
+      input[type="text"] {
+        padding: 10px;
+        width: 200px;
+        margin-right: 10px;
+      }
+      button {
+        padding: 10px 20px;
+        background-color: #007bff;
+        color: white;
+        border: none;
+        cursor: pointer;
+      }
+      button:hover {
+        background-color: #0056b3;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="navbar">
+      <div>Navbar</div>
+      <div class="notifications" id="notifications">No notifications</div>
+    </div>
+    <div class="container">
+      <h1>Submit Your Name</h1>
+      <div class="form-container">
+        <input type="text" id="nameInput" placeholder="Enter your name" />
+        <button id="submitButton">Submit</button>
+      </div>
+      <div id="notificationList"></div>
+    </div>
+
+    <script>
+      const notificationsElement = document.getElementById("notifications");
+      const notificationList = document.getElementById("notificationList");
+      const submitButton = document.getElementById("submitButton");
+      const nameInput = document.getElementById("nameInput");
+
+      let eventSource;
+
+      // Function to create a new EventSource and handle events
+      function createEventSource() {
+        eventSource = new EventSource("/notifications");
+
+        eventSource.onmessage = function (event) {
+          const notification = event.data;
+
+          // Update the notification in the navbar
+          notificationsElement.textContent = `New Notification: ${notification}`;
+
+          // Add the notification to the list
+          const notificationItem = document.createElement("div");
+          notificationItem.className = "notification";
+          notificationItem.textContent = notification;
+          notificationList.appendChild(notificationItem);
+        };
+
+        eventSource.onerror = function () {
+          console.error(
+            "EventSource error occurred. Attempting to reconnect..."
+          );
+          notificationsElement.textContent = "Reconnecting...";
+          eventSource.close(); // Close the current connection
+          setTimeout(createEventSource, 3000); // Retry connection after 3 seconds
+        };
+      }
+
+      // Initialize the EventSource connection
+      createEventSource();
+
+      // Handle form submission
+      submitButton.addEventListener("click", () => {
+        const name = nameInput.value.trim();
+        if (name) {
+          fetch("/submit-name", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/x-www-form-urlencoded",
+            },
+            body: `name=${encodeURIComponent(name)}`,
+          })
+            .then((response) => response.text())
+            .then((message) => alert(message))
+            .catch((error) => console.error("Error:", error));
+          nameInput.value = "";
+        } else {
+          alert("Please enter a name.");
+        }
+      });
+    </script>
+  </body>
+</html>
